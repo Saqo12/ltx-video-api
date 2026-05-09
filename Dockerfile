@@ -1,29 +1,28 @@
-FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install Python, git, and dependencies
-RUN apt-get update && apt-get install -y \
-    python3.11 python3-pip git curl libgl1 libglib2.0-0 wget \
-    && rm -rf /var/lib/apt/lists/*
+# Install Python + system deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.12 python3-pip python3.12-venv git wget ffmpeg libgl1-mesa-glx libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install Python packages
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 \
-    && pip install diffusers transformers accelerate scipy flask \
-    && pip install httpx python-dotenv
+# Upgrade pip
+RUN python3 -m pip install --upgrade pip setuptools wheel
 
-# Clone LTX-Video
-RUN git clone https://github.com/Lightricks/LTX-Video.git . 2>/dev/null || true
+# Install LTX-Video
+RUN python3 -m pip install ltх-video 2>&1 | tail -5 || \
+    pip install ltх-video 2>&1 | tail -5
 
-# Copy app
-COPY app.py .
-COPY requirements.txt .
+# Download models on startup
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 7860
 
-ENV HOST=0.0.0.0
-ENV PORT=7860
-
-CMD ["python3", "-u", "app.py"]
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["python3", "-m", "http_server", "7860"]

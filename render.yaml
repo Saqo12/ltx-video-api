@@ -1,0 +1,18 @@
+# Render Blueprint for LTX-Video API
+# GPU-enabled web service for AI video generation
+
+services:
+  - name: ltx-video-api
+    runtime: python
+    region: oregon
+    repo: https://github.com/Saqo12/ltx-video-api
+    branch: main
+    autoDeploy: true
+    plan: standard
+    instanceType: gpu
+    buildCommand: pip install -e .
+    startCommand: python3 -m http_server 7860
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
